@@ -106,29 +106,43 @@ typedef struct __attribute__((__packed__)) tcphdr
 
 typedef struct __attribute__((__packed__)) icmphdr
 {
-    ipv4_packet_t ip_hdr;
+    uint8_t ethdst_addr[ETH_HWADDR_LEN];
+    uint8_t ethsrc_addr[ETH_HWADDR_LEN];
+    uint16_t eth_type;
+    uint8_t ihl_version;
+    uint8_t tos;
+    uint16_t tot_len;
+    uint16_t id;
+    uint16_t frag_off;
+    uint8_t ttl;
+    uint8_t protocol;
+    uint16_t check;
+    uint32_t src_ip;
+    uint32_t dst_ip;
     uint8_t type;		    /* message type */
     uint8_t code;		    /* type sub-code */
     uint16_t checksum;
-    union
-    {
-        struct
-        {
-            uint16_t id;
-            uint16_t sequence;
-        } echo;			    /* echo datagram */
-        uint32_t gateway;	/* gateway address */
-        struct
-        {
-            uint16_t __unused;
-            uint16_t mtu;
-        } frag;			    /* path mtu discovery */
-        struct
-        {
-            ipv4_packet_t old_ip_hdr;
-            uint64_t old_data;
-        } dest_unreach;
-    } un;
+    ipv4_packet_t old_ip_hdr;
+    uint64_t old_data;
+    // union
+    // {
+    //     struct
+    //     {
+    //         uint16_t id;
+    //         uint16_t sequence;
+    //     } echo;			    /* echo datagram */
+    //     uint32_t gateway;	/* gateway address */
+    //     struct
+    //     {
+    //         uint16_t __unused;
+    //         uint16_t mtu;
+    //     } frag;			    /* path mtu discovery */
+    //     struct
+    //     {
+    //         ipv4_packet_t old_ip_hdr;
+    //         uint64_t old_data;
+    //     } dest_unreach;
+    // } un;
 } icmphdr_t;
 
 typedef struct __attribute__((__packed__)) arphdr {
