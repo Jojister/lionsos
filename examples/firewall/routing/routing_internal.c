@@ -74,8 +74,10 @@ static void process_arp_waiting(void)
         /* Send or drop all matching ip packets */
         if (response.state == ARP_STATE_UNREACHABLE) {
             /* Invalid response, drop packet associated with the IP address */
+            sddf_dprintf("routing_internal: Freeing arp requests: \n");
             pkt_waiting_node_t *pkt_node = req_pkt;
-            for (uint16_t i = 0; i < req_pkt->num_children; i++) {
+            for (uint16_t i = 0; i < req_pkt->num_children + 1; i++) {
+                sddf_dprintf("\t Free pkt node: %p at index: %d\n", pkt_node->buffer.io_or_offset, pkt_node - pkt_waiting_queue.packets);
                 err = fw_enqueue(&rx_free, pkt_node->buffer);
                 assert(!err);
                 pkt_node = pkts_waiting_next_child(&pkt_waiting_queue, pkt_node);
@@ -86,23 +88,25 @@ static void process_arp_waiting(void)
         } else {
             /* Substitute the MAC address and send packets out of the NIC */
             pkt_waiting_node_t *pkt_node = req_pkt;
-            for (uint16_t i = 0; i < req_pkt->num_children; i++) {
+            sddf_dprintf("routing_internal: sending packets from arp_waiting: \n");
+            for (uint16_t i = 0; i < req_pkt->num_children + 1; i++) {
                 ipv4_packet_t *tx_pkt = (ipv4_packet_t *)(data_vaddr + pkt_node->buffer.io_or_offset);
                 memcpy(tx_pkt->ethdst_addr, response.mac_addr, ETH_HWADDR_LEN);
                 memcpy(tx_pkt->ethsrc_addr, router_config.mac_addr, ETH_HWADDR_LEN);
                 tx_pkt->check = 0;
-
+                sddf_dprintf("\t%d: Pkt node: %p at index: %d at ip: %s\n", i, pkt_node->buffer.io_or_offset, pkt_node - pkt_waiting_queue.packets, ipaddr_to_string(pkt_node->ip, ip_addr_buf1));
                 if (FW_DEBUG_OUTPUT) {
                     sddf_printf("%sRouter sending packet for ip %s (next hop %s) with buffer number %lu\n",
                         fw_frmt_str[router_config.webserver.interface],
                         ipaddr_to_string(tx_pkt->dst_ip, ip_addr_buf0), ipaddr_to_string(response.ip, ip_addr_buf1),
-                        req_pkt->buffer.io_or_offset/NET_BUFFER_SIZE);
+                        pkt_node->buffer.io_or_offset/NET_BUFFER_SIZE);
                 }
 
                 err = fw_enqueue(&tx_active, pkt_node->buffer);
                 assert(!err);
                 tx_net = true;
-                pkt_node = pkts_waiting_next_child(&pkt_waiting_queue, pkt_node);
+                // pkt_node = pkts_waiting_next_child(&pkt_waiting_queue, pkt_node);
+                pkt_node = pkt_waiting_queue.packets + pkt_node->next_child;
             }
             /* Free the packet waiting nodes */
             fw_routing_err_t routing_err = pkts_waiting_free_parent(&pkt_waiting_queue, req_pkt);
@@ -273,7 +277,9 @@ void init(void)
 
     /* Add an entry for the webserver */
     uint16_t route_id;
-    fw_routing_table_add_route(&routing_table, ROUTING_OUT_INTERNAL, 0, router_config.ip, 24, router_config.ip, &route_id);
+    fw_routing_table_add_route(&routing_table, ROUTING_OUT_INTERNAL, 0, router_config.ip, 31, router_config.ip, &route_id);
+
+    sddf_dprintf("routing_table: %p -- pkt_waiting_list: %p\n", router_config.webserver.routing_table.vaddr, router_config.packet_queue.vaddr);
 
     /* Initialise the packet waiting queue from mapped in memory */
     pkt_waiting_init(&pkt_waiting_queue, router_config.packet_queue.vaddr, router_config.rx_free.capacity);

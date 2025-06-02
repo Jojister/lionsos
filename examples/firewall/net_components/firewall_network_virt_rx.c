@@ -13,6 +13,7 @@
 #include <sddf/util/util.h>
 #include <sddf/util/printf.h>
 #include <sddf/util/cache.h>
+#include <lions/firewall/common.h>
 #include <lions/firewall/config.h>
 #include <lions/firewall/protocols.h>
 #include <lions/firewall/queue.h>
@@ -134,6 +135,8 @@ void rx_return(void)
             int client = get_protocol_match((struct ethernet_header *) buffer_vaddr, &protocol);
             if (client == BROADCAST_ID) {
                 int ref_index = buffer.io_or_offset / NET_BUFFER_SIZE;
+                // sddf_dprintf("%sIndex %u. Buff ref value: %u. Buff ref next value: %u. Eth-->client: Broadcast\n", 
+                    // fw_frmt_str[firewall_config.interface], ref_index, buffer_refs[ref_index], config.num_clients);
                 assert(buffer_refs[ref_index] == 0);
                 // For broadcast packets, set the refcount to number of clients
                 // in the system. Only enqueue buffer back to driver if
@@ -148,6 +151,8 @@ void rx_return(void)
                 continue;
             } else if (client >= 0) {
                 int ref_index = buffer.io_or_offset / NET_BUFFER_SIZE;
+                // sddf_dprintf("%sIndex %u. Buff ref value: %u. Buff ref next value: %u. Eth-->client: Net client %d\n", 
+                    // fw_frmt_str[firewall_config.interface], ref_index, buffer_refs[ref_index], 1, client);
                 assert(buffer_refs[ref_index] == 0);
                 buffer_refs[ref_index] = 1;
 
@@ -192,6 +197,8 @@ void rx_provide(void)
                        && (buffer.io_or_offset < NET_BUFFER_SIZE * state.rx_queue_clients[client].capacity));
 
                 int ref_index = buffer.io_or_offset / NET_BUFFER_SIZE;
+                // sddf_dprintf("%sIndex %u. Buff ref value: %u. Buff ref next value: %u. Client-->eth: Net client %d\n", 
+                //     fw_frmt_str[firewall_config.interface], ref_index, buffer_refs[ref_index], buffer_refs[ref_index] - 1, client);
                 assert(buffer_refs[ref_index] != 0);
 
                 buffer_refs[ref_index]--;
@@ -229,6 +236,8 @@ void rx_provide(void)
                     && (buffer.io_or_offset < NET_BUFFER_SIZE * state.firewall_free_clients[client].capacity));
 
             int ref_index = buffer.io_or_offset / NET_BUFFER_SIZE;
+            // sddf_dprintf("%sIndex %u. Buff ref value: %u. Buff ref next value: %u. Client-->eth: FW client %d\n", 
+            //     fw_frmt_str[firewall_config.interface], ref_index, buffer_refs[ref_index], buffer_refs[ref_index] - 1, client);
             assert(buffer_refs[ref_index] != 0);
 
             buffer_refs[ref_index]--;

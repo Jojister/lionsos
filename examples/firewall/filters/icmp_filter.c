@@ -44,7 +44,7 @@ void filter(void)
 
             void *pkt_vaddr = net_config.rx_data.vaddr + buffer.io_or_offset;
             ipv4_packet_t *ip_pkt = (ipv4_packet_t *)pkt_vaddr;
-            icmphdr_t *icmp_hdr = (icmphdr_t *)(pkt_vaddr + transport_layer_offset(ip_pkt));
+            icmphdr_t *icmp_hdr = (icmphdr_t *)(pkt_vaddr);
 
             bool default_action = false;
             uint8_t rule_id = 0;

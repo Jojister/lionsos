@@ -85,7 +85,7 @@ typedef struct pkts_waiting {
 void pkt_waiting_init(pkts_waiting_t *pkts_waiting, void *packets, uint16_t capacity) {
     pkts_waiting->packets = (pkt_waiting_node_t *)packets;
     pkts_waiting->capacity = capacity;
-    for (uint16_t i = 0; i < pkts_waiting->size; i++) {
+    for (uint16_t i = 0; i < pkts_waiting->capacity; i++) {
         pkt_waiting_node_t *node = pkts_waiting->packets + i;
         node->next_ip = i + 1;
         node->prev_ip = i - 1;
@@ -139,6 +139,7 @@ fw_routing_err_t pkt_waiting_push_child(pkts_waiting_t *pkts_waiting, pkt_waitin
         next_child = pkts_waiting_next_child(pkts_waiting, next_child);
     }
     next_child->next_child = new_idx;
+    sddf_dprintf("ip: %u -- push new child idx: %u -- parent idx: %u -- last_child: %u -- parent->child: %u\n", ip, new_idx, parent - pkts_waiting->packets, next_child - pkts_waiting->packets, next_child->next_child);
 
     /* Update counts */
     parent->num_children++;
@@ -162,6 +163,7 @@ fw_routing_err_t pkt_waiting_push(pkts_waiting_t *pkts_waiting, uint32_t ip, fw_
     uint16_t head_idx = pkts_waiting->waiting_head;
     pkt_waiting_node_t *head_node = pkts_waiting->packets + head_idx;
 
+    sddf_dprintf("push new idx: %u\n", new_idx);
     /* Update values */
     new_node->ip = ip;
     new_node->buffer = buffer;
@@ -179,6 +181,7 @@ fw_routing_err_t pkt_waiting_push(pkts_waiting_t *pkts_waiting, uint32_t ip, fw_
     /* Update counts */
     pkts_waiting->size++;
     
+    sddf_dprintf("pkt waiting push finish\n");
     return ROUTING_ERR_OKAY;
 }
 
@@ -247,6 +250,7 @@ static uint16_t fw_routing_find_route(fw_routing_table_t *table,
         if (!entry->valid) {
             continue;
         }
+        sddf_dprintf("iteration: %d\n", i);
 
         if ((SUBNET_MASK(entry->subnet) & ip) == (SUBNET_MASK(entry->subnet) & entry->ip)) {
             /* ip is part of subnet */
@@ -264,6 +268,7 @@ static uint16_t fw_routing_find_route(fw_routing_table_t *table,
     }
 
     if (match) {
+        sddf_dprintf("%s: made a match -- %d\n", microkit_name, match - table->entries);
         *next_hop = match->next_hop;
         *out_interface = match->out_interface;
         return match - table->entries;
