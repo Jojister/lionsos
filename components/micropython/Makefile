@@ -164,7 +164,7 @@ all: directories $(BUILD)/micropython.elf
 $(BUILD)/micropython/lwip/%.o: $(LWIP)/src/%.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(BUILD)/micropython.elf: $(OBJ) $(LIBMICROKITCO_OBJ)
+$(BUILD)/micropython.elf: $(OBJ) $(LIBMICROKITCO_OBJ) $(BUILD)/sddf/libi2c.a
 	$(ECHO) "LINK $@"
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 	$(Q)$(SIZE) $@

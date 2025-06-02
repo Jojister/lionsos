@@ -117,7 +117,8 @@ SDDF_MAKEFILES := ${SDDF}/util/util.mk \
 	${SDDF}/network/components/network_components.mk \
 	${SDDF}/serial/components/serial_components.mk \
 	${SDDF}/i2c/components/i2c_virt.mk \
-	${SDDF}/libco/libco.mk
+	${SDDF}/libco/libco.mk \
+	${SDDF}/i2c/libi2c.mk
 
 # We can build the kitty system without the I2C Driver
 ifneq ($(I2C_DRIV_DIR), )
